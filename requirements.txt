@@ -1,0 +1,20 @@
+Decksofrunterra:
+  Image sizes
+Card types to handle:
+  3 types of spells (burst, slow, fast)
+  4 types of rarity
+  6 region types
+    - spell and champion cards
+
+  Border effect
+  etc
+
+  Checklist:
+
+    Common Spells:
+
+    Shadow isle:
+      No rarity
+      Common spell
+      Rare spell
+      Epic Spell

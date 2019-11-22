@@ -6,15 +6,11 @@ Card types to handle:
   6 region types
     - spell and champion cards
 
-  Border effect
-  etc
-
-  Checklist:
-
-    Common Spells:
-
-    Shadow isle:
-      No rarity
-      Common spell
-      Rare spell
-      Epic Spell
+Champion Cards:
+  Art:
+    x,y: 28,57
+    w,h: 623, 906
+    L border: 30px
+    R border : 27ppx
+    Borders have a gradient from opaque to more transparent from bottom to top
+    L border has some sort of blueish tint to it

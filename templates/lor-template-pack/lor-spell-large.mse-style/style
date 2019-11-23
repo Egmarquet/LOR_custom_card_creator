@@ -1,0 +1,510 @@
+﻿mse version: 2.0.0
+game: LoR
+short name: Spell Large
+installer group: Legends of Runeterra/spell style
+icon: card-sample.png
+position hint: 06
+
+version: 2019-10-30
+depends on:
+	package: LoR.mse-game
+	version: 2019-10-30
+depends on:
+	package: lor-symbol.mse-symbol-font
+	version: 2019-10-30
+
+card width: 680
+card height: 1024
+card dpi: 150
+# Author: Wolfwood
+# Based on: magic-new
+############################################################## Extra scripts
+init script:
+	keyword_chops := [ "BARRIER": 82,
+		"CAN'T BLOCK": 33,
+		"CHALLENGER": 34,
+		"DOUBLE ATTACK": -4,
+		"EPHEMERAL": 47,
+		"ELUSIVE": 86,
+		"FEARSOME": 60,
+		"FLEETING": 72,
+		"LIFESTEAL": 63,
+		"OVERWHELM": 31,
+		"QUICK ATTACK": 14,
+		"REGENERATION": 8,
+		"TOUGH": 94,
+		"TRAP": 150,
+		"BURST": 100,
+		"FAST": 116,
+		"SLOW": 108,
+		"SKILL": 150 ]
+	keyword_chop := {
+		if styling.set_keyword_chop != "" then ( to_number(styling.set_keyword_chop) )
+		else ( for each k:v in keyword_chops do  if k == card.keywordtext then v )
+	}
+	keyword_height := { 312 - the_great_offset() + to_number(styling.set_keywords_offset) + name_offset() }
+	text_lines := {	max(1, (hight/2) div (fs*1.275)) }
+	font_size := { if styling.set_title_font_size != "" then to_number(styling.set_title_font_size) else 20 }
+	name_offset := {
+		x := to_number(styling.set_title_offset)
+		fsr := font_size()
+		x + ((text_lines(hight: card_style.name.content_height, fs:fsr) - 1) * fsr + (fsr - 20)) * 1.275
+	}
+	the_great_offset := {
+		fsr := font_size()
+		if text_lines(hight: card_style.name.content_height, fs:fsr) == 1 then 0 else 2
+	}
+	speed_frame := {
+		v := card.keysymbolreal
+		if styling.no_of_keywords != 1 then v := card.keysymbol1
+		if styling.set_spell_speed_frame == "Burst" or (styling.set_spell_speed_frame == "Default" and v == "Spell Burst") then "burst"
+		else if styling.set_spell_speed_frame == "Fast" or (styling.set_spell_speed_frame == "Default" and v == "Spell Fast") then "fast"
+		else "slow"
+	}
+
+############################################################## Extra style options
+styling field:
+	type: choice
+	name: no of keywords
+	description: Set the number of keywords to use. Keyword text can only be if used if this is set to 1.
+	choice: 1
+	choice: 2
+	choice: 3
+	choice: 4
+	initial: 1
+styling field:
+	type: choice
+	name: set spell speed frame
+	description: Determines whether the Burst, Fast or Slow frame is used. By default, checks the first keyword symbol.
+	choice: Default
+	choice: Burst
+	choice: Fast
+	choice: Slow
+	initial: Default
+styling field:
+	type: text
+	name: set title font size
+	description: Sets the font size of the card's name. Leave blank to default to 20.
+styling field:
+	type: text
+	name: set text font size
+	description: Sets the font size of the card's ability text. Leave blank to default to 13.
+styling field:
+	type: text
+	name: set keyword chop
+	description: Overrides the regular sizing of the keyword box. Automatic resizing is disabled if this field contains a value.
+styling field:
+	type: text
+	name: set title offset
+	description: Adjusts the position of the name, keywords and ability text.
+styling field:
+	type: text
+	name: set keywords offset
+	description: Adjusts the position of the keywords and ability text.
+styling field:
+	type: text
+	name: set ability text offset
+	description: Adjusts the position of the ability text.
+############################################################## Card fields
+card style:
+	############################# Background stuff
+	background:
+		left:	0
+		top:	0
+		width:	680
+		height:	1024
+		z index: -1
+		render style: image
+		choice images:
+			normal: 
+				script:
+					"frame" + speed_frame() + to_lower(card.rarity) + ".png"
+	artist arrow:
+		left:	24
+		top:	980
+		width:	32
+		height:	32
+		z index: 0
+		render style: image
+		visible: { card.illustrator != "" }
+		choice images:
+			normal: artistarrow.png
+	############################# Image
+	image:
+		left:	114
+		top:	72
+		width:	448
+		height:	442
+		z index: -3
+		default: { "backdrop.png" }
+		mask: { "mask" + speed_frame() + ".png" }
+	image2:
+		left:	20
+		top:	464
+		width:	634
+		height:	470
+		z index: -4
+		default: { "backdrop2.png" }
+		mask: mask2.png
+	############################# Name line
+	name:
+		left: 60
+		top : { (283 + to_number(styling.set_title_offset))*2 }
+		width: 548
+		height:
+			script:
+				fsr := font_size()
+				(text_lines(hight: card_style.name.content_height, fs:fsr) + 0.4) * fsr * 1.275 * 2
+		alignment: center top shrink-overflow
+		padding left:   8
+		padding top:    4
+		padding right:  8
+		padding bottom: 4
+		line height soft: 0.75
+		line height hard: 0.75
+		z index: 6
+		font:
+			name: BeaufortforLOL-Bold
+			size: { font_size()*2 }
+			weight: bold
+			color: rgb(255,255,255)
+	############################# Card type
+	region:
+		left:	298
+		top:	830
+		width:	80
+		height:	80
+		z index: 2
+		render style: image
+		mask: half.png
+		choice images:
+			Demacia: demacia.png
+			Shadow Isles: shadowisles.png
+			Noxus: noxus.png
+			Ionia: ionia.png
+			Freljord: freljord.png
+			Piltover & Zaun: piltoverzaun.png
+			Bilgewater: bilgewater.png
+			Targon: targon.png
+			Bandle City: bandlecity.png
+			Ixtal: ixtal.png
+			Shurima: shurima.png
+			The Void: void.png
+			Runeterra: runeterra.png
+			Custom Region 1: {if set.Custom_Region_1 != "" then "/LoR.mse-game/custom/" + set.Custom_Region_1}
+			Custom Region 2: {if set.Custom_Region_2 != "" then "/LoR.mse-game/custom/" + set.Custom_Region_2}
+			Custom Region 3: {if set.Custom_Region_3 != "" then "/LoR.mse-game/custom/" + set.Custom_Region_3}
+			Custom Region 4: {if set.Custom_Region_4 != "" then "/LoR.mse-game/custom/" + set.Custom_Region_4}
+			Custom Region 5: {if set.Custom_Region_5 != "" then "/LoR.mse-game/custom/" + set.Custom_Region_5}
+	rarity:
+		left: 300
+		top : 938
+		width:	76
+		height:	76
+		z index: 2
+		render style: hidden
+		visible: true
+		choice images:
+			Champion: gemchampiongrey.png
+			Epic: gemepic.png
+			Rare: gemrare.png
+			Common: gemcommon.png
+			None: { built_in_image("bool_no") }
+	############################# Text box
+	ability:
+		left: 60
+		top : { (48 + keyword_height() + to_number(styling.set_ability_text_offset))*2 }
+		width: 548
+		height: { max(50, card_style.ability.content_height + 10) }
+		font:
+			name: Arial
+			italic name: Arial Italic
+			size: {if styling.set_text_font_size != "" then to_number(styling.set_text_font_size)*2 else 26 }
+			color: rgb(255,255,255)
+		symbol font:
+			name: lor-symbol.mse-symbol-font
+			size: {if styling.set_text_font_size != "" then to_number(styling.set_text_font_size)*2 else 26 }
+		alignment: center top shrink-overflow
+		z index: 2
+		padding left:   8
+		padding top:    4
+		padding right:  8
+		padding bottom: 4
+		line height hard: 1.2
+		line height line: 1.5
+	############################# Keywords
+	keywordleft:
+		left:	{ 105 + keyword_chop() }
+		top: { keyword_height()*2 }
+		width:	28
+		height:	104
+		z index: 1
+		render style: image
+		visible: { styling.no_of_keywords == 1 }
+		choice images:
+			normal: keywordleft.png
+	keywordright:
+		left:	{ 533 - keyword_chop() }
+		top: { keyword_height()*2 }
+		width:	28
+		height:	104
+		z index: 1
+		render style: image
+		visible: { styling.no_of_keywords == 1 }
+		choice images:
+			normal: keywordright.png
+	keywordmiddle:
+		left:	{ 133 + keyword_chop() }
+		top: { keyword_height()*2 }
+		width:	{ 400 - keyword_chop()*2 }
+		height:	104
+		z index: 1
+		render style: image
+		visible: { styling.no_of_keywords == 1 }
+		choice images:
+			normal: keywordmiddle.png
+	keywordbox1:
+		left:	{ 343 - 74*styling.no_of_keywords }
+		top: { keyword_height()*2 }
+		width:	120
+		height:	100
+		z index: 1
+		render style: image
+		visible: { styling.no_of_keywords > 1 }
+		choice images:
+			normal: keywordmini.png
+	keywordbox2:
+		left:	{ 491 - 74*styling.no_of_keywords }
+		top: { keyword_height()*2 }
+		width:	120
+		height:	100
+		z index: 1
+		render style: image
+		visible: { styling.no_of_keywords > 1 }
+		choice images:
+			normal: keywordmini.png
+	keywordbox3:
+		left:	{ 639 - 74*styling.no_of_keywords }
+		top: { keyword_height()*2 }
+		width:	120
+		height:	100
+		z index: 1
+		render style: image
+		visible: { styling.no_of_keywords > 2 }
+		choice images:
+			normal: keywordmini.png
+	keywordbox4:
+		left:	{ 787 - 74*styling.no_of_keywords }
+		top: { keyword_height()*2 }
+		width:	120
+		height:	100
+		z index: 1
+		render style: image
+		visible: { styling.no_of_keywords > 3 }
+		choice images:
+			normal: keywordmini.png
+	keywordtext:
+		left:
+			script:
+				x := 201 + keyword_chop()
+				if card.keysymbolreal == "Blank" then x - 76 else x
+		top : { if styling.no_of_keywords == 1 then keyword_height()*2 + 20 else -100 }
+		width:
+			script:
+				x := 340 - keyword_chop()*2
+				if card.keysymbolreal == "Blank" then x + 82 else x
+		height: 62
+		alignment: { if card.keysymbolreal == "Blank" then "center middle shrink-overflow" else "left middle shrink-overflow"}
+		visible: { styling.no_of_keywords == 1 }
+		z index: 4
+		font:
+			name: BeaufortforLOL-Bold
+			size: 32
+			weight: bold
+			color: rgb(240,204,112)
+	keysymbolreal:
+		left: { 133 + keyword_chop() }
+		top: { if styling.no_of_keywords == 1 then keyword_height()*2 + 24 else -100 }
+		width:	60
+		height:	60
+		z index: 5
+		render style: image
+		visible: { styling.no_of_keywords == 1 }
+		choice images:
+			Spell Burst: keywordburst.png
+			Spell Fast: keywordfast.png
+			Spell Slow: keywordslow.png
+			Standard Barrier: keywordbarrier.png
+			Standard Can't Block: keywordcantblock.png
+			Standard Challenger: keywordchallenger.png
+			Standard Double Attack: keyworddoubleattack.png
+			Standard Ephemeral: keywordephemeral.png
+			Standard Elusive: keywordelusive.png
+			Standard Fearsome: keywordfearsome.png
+			Standard Fleeting: keywordfleeting.png
+			Standard Lifesteal: keywordlifesteal.png
+			Standard Overwhelm: keywordoverwhelm.png
+			Standard Quick Attack: keywordquickattack.png
+			Standard Regeneration: keywordregeneration.png
+			Standard Tough: keywordtough.png
+			Custom Symbol 1: { if set.Custom_Symbol_1 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_1 }
+			Custom Symbol 2: { if set.Custom_Symbol_2 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_2 }
+			Custom Symbol 3: { if set.Custom_Symbol_3 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_3 }
+			Custom Symbol 4: { if set.Custom_Symbol_4 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_4 }
+			Custom Symbol 5: { if set.Custom_Symbol_5 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_5 }
+	keysymbol1:
+		left: { 374 - 74*styling.no_of_keywords }
+		top : { if styling.no_of_keywords > 1 then keyword_height()*2 + 24 else -100 }
+		width:	60
+		height:	60
+		z index: 3
+		render style: image
+		visible: { styling.no_of_keywords > 1 }
+		choice images:
+			Spell Burst: keywordburst.png
+			Spell Fast: keywordfast.png
+			Spell Slow: keywordslow.png
+			Standard Barrier: keywordbarrier.png
+			Standard Can't Block: keywordcantblock.png
+			Standard Challenger: keywordchallenger.png
+			Standard Double Attack: keyworddoubleattack.png
+			Standard Ephemeral: keywordephemeral.png
+			Standard Elusive: keywordelusive.png
+			Standard Fearsome: keywordfearsome.png
+			Standard Fleeting: keywordfleeting.png
+			Standard Lifesteal: keywordlifesteal.png
+			Standard Overwhelm: keywordoverwhelm.png
+			Standard Quick Attack: keywordquickattack.png
+			Standard Regeneration: keywordregeneration.png
+			Standard Tough: keywordtough.png
+			Custom Symbol 1: { if set.Custom_Symbol_1 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_1 }
+			Custom Symbol 2: { if set.Custom_Symbol_2 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_2 }
+			Custom Symbol 3: { if set.Custom_Symbol_3 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_3 }
+			Custom Symbol 4: { if set.Custom_Symbol_4 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_4 }
+			Custom Symbol 5: { if set.Custom_Symbol_5 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_5 }
+	keysymbol2:
+		left: { 522 - 74*styling.no_of_keywords }
+		top : { if styling.no_of_keywords > 1 then keyword_height()*2 + 20 else -100 }
+		width:	60
+		height:	60
+		z index: 3
+		render style: image
+		visible: { styling.no_of_keywords > 1 }
+		choice images:
+			Spell Burst: keywordburst.png
+			Spell Fast: keywordfast.png
+			Spell Slow: keywordslow.png
+			Standard Barrier: keywordbarrier.png
+			Standard Can't Block: keywordcantblock.png
+			Standard Challenger: keywordchallenger.png
+			Standard Double Attack: keyworddoubleattack.png
+			Standard Ephemeral: keywordephemeral.png
+			Standard Elusive: keywordelusive.png
+			Standard Fearsome: keywordfearsome.png
+			Standard Fleeting: keywordfleeting.png
+			Standard Lifesteal: keywordlifesteal.png
+			Standard Overwhelm: keywordoverwhelm.png
+			Standard Quick Attack: keywordquickattack.png
+			Standard Regeneration: keywordregeneration.png
+			Standard Tough: keywordtough.png
+			Custom Symbol 1: { if set.Custom_Symbol_1 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_1 }
+			Custom Symbol 2: { if set.Custom_Symbol_2 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_2 }
+			Custom Symbol 3: { if set.Custom_Symbol_3 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_3 }
+			Custom Symbol 4: { if set.Custom_Symbol_4 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_4 }
+			Custom Symbol 5: { if set.Custom_Symbol_5 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_5 }
+	keysymbol3:
+		left: { 670 - 74*styling.no_of_keywords }
+		top : { if styling.no_of_keywords > 2 then keyword_height()*2 + 20 else -100 }
+		width:	60
+		height:	60
+		z index: 3
+		render style: image
+		visible: { styling.no_of_keywords > 2 }
+		choice images:
+			Spell Burst: keywordburst.png
+			Spell Fast: keywordfast.png
+			Spell Slow: keywordslow.png
+			Standard Barrier: keywordbarrier.png
+			Standard Can't Block: keywordcantblock.png
+			Standard Challenger: keywordchallenger.png
+			Standard Double Attack: keyworddoubleattack.png
+			Standard Ephemeral: keywordephemeral.png
+			Standard Elusive: keywordelusive.png
+			Standard Fearsome: keywordfearsome.png
+			Standard Fleeting: keywordfleeting.png
+			Standard Lifesteal: keywordlifesteal.png
+			Standard Overwhelm: keywordoverwhelm.png
+			Standard Quick Attack: keywordquickattack.png
+			Standard Regeneration: keywordregeneration.png
+			Standard Tough: keywordtough.png
+			Custom Symbol 1: { if set.Custom_Symbol_1 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_1 }
+			Custom Symbol 2: { if set.Custom_Symbol_2 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_2 }
+			Custom Symbol 3: { if set.Custom_Symbol_3 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_3 }
+			Custom Symbol 4: { if set.Custom_Symbol_4 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_4 }
+			Custom Symbol 5: { if set.Custom_Symbol_5 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_5 }
+	keysymbol4:
+		left: { 818 - 74*styling.no_of_keywords }
+		top : { if styling.no_of_keywords > 3 then keyword_height()*2 + 20 else -100 }
+		width:	60
+		height:	60
+		z index: 3
+		render style: image
+		visible: { styling.no_of_keywords > 3 }
+		choice images:
+			Spell Burst: keywordburst.png
+			Spell Fast: keywordfast.png
+			Spell Slow: keywordslow.png
+			Standard Barrier: keywordbarrier.png
+			Standard Can't Block: keywordcantblock.png
+			Standard Challenger: keywordchallenger.png
+			Standard Double Attack: keyworddoubleattack.png
+			Standard Ephemeral: keywordephemeral.png
+			Standard Elusive: keywordelusive.png
+			Standard Fearsome: keywordfearsome.png
+			Standard Fleeting: keywordfleeting.png
+			Standard Lifesteal: keywordlifesteal.png
+			Standard Overwhelm: keywordoverwhelm.png
+			Standard Quick Attack: keywordquickattack.png
+			Standard Regeneration: keywordregeneration.png
+			Standard Tough: keywordtough.png
+			Custom Symbol 1: { if set.Custom_Symbol_1 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_1 }
+			Custom Symbol 2: { if set.Custom_Symbol_2 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_2 }
+			Custom Symbol 3: { if set.Custom_Symbol_3 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_3 }
+			Custom Symbol 4: { if set.Custom_Symbol_4 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_4 }
+			Custom Symbol 5: { if set.Custom_Symbol_5 != "" then "/LoR.mse-game/custom/" + set.Custom_Symbol_5 }
+	#############################
+	cost:
+		z index: 4
+		left:	42
+		top:	69
+		width:	100
+		height:	66
+		alignment: center middle shrink-overflow
+		font:
+			name: BeaufortforLOL-Bold
+			size: 68
+			color: rgb(255,255,255)
+	############################# Card sorting / numbering
+	############################# Copyright stuff
+	illustrator:
+		left: 64
+		top : 984
+		width: 200
+		height: 24
+		alignment: left middle
+		z index: 1
+		font:
+			name: BeaufortforLOL-Bold
+			size: 16
+			color: rgb(0,0,0)
+	copyright line:
+		right: 660
+		top : 984
+		width: 244
+		height: 24
+		alignment: right middle
+		z index: 1
+		font:
+			name: BeaufortforLOL-Bold
+			size: 16
+			color: rgb(0,0,0)

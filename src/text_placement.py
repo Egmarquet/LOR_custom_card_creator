@@ -14,7 +14,13 @@ def get_text_center(outer_width, inner_width):
     center = int(outer_width/2.0 - inner_width/2.0)
     return center
 
-def draw_text_block(img, lines, font, x_offset=0, y_offset=0, padding=0):
+def draw_text(img, text, font, pos, color=(0,0,0,255)):
+    draw = ImageDraw.Draw(img)
+    draw.text((center_pos,y_offset),text, font=font, fill=color)
+
+    return img
+
+def draw_text_block(img, lines, font, x_offset=0, y_offset=0, padding=0, color=(0,0,0,255)):
     """
     Given a list of lines with dimensions, draw them onto the image, beginning
     at x,y and decending downwards
@@ -27,7 +33,6 @@ def draw_text_block(img, lines, font, x_offset=0, y_offset=0, padding=0):
         font (PIL.ImageFont):
     """
     draw = ImageDraw.Draw(img)
-    color = (0,0,0,255)
     for line in lines:
         text, (w, h) = line
         center_pos = get_text_center(img.width, w)
@@ -93,5 +98,6 @@ if __name__ == '__main__':
     img = Image.open("./templates/spells/slow/slow_rare.png")
     draw = ImageDraw.Draw(img)
     color = (0,0,0,255)
+
     #img.show()
     draw_text_block(img,break_text(text, font, 500),font, y_offset=600)

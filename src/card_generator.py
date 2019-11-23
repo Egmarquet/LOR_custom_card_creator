@@ -3,16 +3,21 @@ from PIL import ImageFont
 from PIL import ImageDraw
 
 class UnitCard(object):
-    def __init__(self, template):
+    def __init__(self, template, hp, pwr, mana):
         self.image = None
         self.template = template
+        self.img = None
+        self.hp = hp
+        self.pwr = pwr
+        self.mana = mana
+
+    def set_image
 
 def horizontal_split(ref, split_pts):
     if not all([i<=ref.size[0] and i>=0 for i in split_pts]):
         raise ValueError("Split position out of range")
 
     split_imgs = []
-
     for i,pos in enumerate(split_pts):
         if i == 0:
             bounds = (0,0,pos,ref.size[1])

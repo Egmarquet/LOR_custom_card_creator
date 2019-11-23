@@ -10,7 +10,8 @@ Champion Cards:
   Art:
     x,y: 28,57
     w,h: 623, 906
-    L border: 30px
-    R border : 27ppx
+    L border: 30px wide
+    R border : 27ppx wide
+    Going to assume the top border is static, however this might not be the case
     Borders have a gradient from opaque to more transparent from bottom to top
     L border has some sort of blueish tint to it

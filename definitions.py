@@ -9,25 +9,24 @@ FONTS_DIR = os.path.join(ROOT_DIR, 'fonts')
 
 # fonts
 FONT_BEAUFORT = os.path.join(FONTS_DIR, "Beaufort for LOL Bold.ttf")
-FONT_UNIVERSL = os.path.join(FONTS_DIR, "UniverseLSTStd-UltraCn.ttf")
-
+FONT_UNIVERSL = os.path.join(FONTS_DIR, "UniversLTStd-UltraCn.otf")
+FONT_PADUK = os.path.join(FONTS_DIR, "padauk-book.ttf")
 # font sizes
 FONT_SZ_MANA = 90
 FONT_SZ_HPPWR = 70
-FONT_SZ_DESCRIPTION = 32
+FONT_SZ_DESCRIPTION = 42
 FONT_SZ_KEYWORD = NotImplementedError()
 
 # Static text positions
-#SD is single digit, DD is double digit
-POS_MANA_SD = (66,38)
-POS_MANA_DD = (36,38)
-POS_HP_SD = (72, 865)
-POS_HP_DD = (36, 850)
+POS_MANA = (54,54,131,151)
+POS_HP = (45, 881, 130, 944)
+POS_PWR = (553, 881, 638, 944)
 
 # Colors:
 WHITE = (255,255,255)
 OFF_WHITE = (246,227,227)
 BLACK = (0,0,0)
+KEYWORD_SYMBOL_COLOR = (250,214,90)
 
 # Champion Frames
 FRAME_CHAMPION_BASE = os.path.join(TEMPLATE_DIR, 'lor-champion-large.mse-style', 'frame1gem.png')
@@ -43,3 +42,39 @@ FRAME_FOLLOWER_COMMON = os.path.join(TEMPLATE_DIR, 'lor-follower-large.mse-style
 FRAME_FOLLOWER_RARE = os.path.join(TEMPLATE_DIR, 'lor-follower-large.mse-style', 'framerare.png')
 FRAME_FOLLOWER_EPIC = os.path.join(TEMPLATE_DIR, 'lor-follower-large.mse-style', 'frameepic.png')
 FRAME_FOLLOWER_NO_GEM = os.path.join(TEMPLATE_DIR, 'lor-follower-large.mse-style', 'framegemless.png')
+
+# Keyword Symbols (for text)
+KEYWORD_SYMBOL_STUN =  os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'stun.png')
+KEYWORD_SYMBOL_OVERWHELM = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'overwhelm.png')
+KEYWORD_SYMBOL_LASTBREATH = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'lastbreath.png')
+KEYWORD_SYMBOL_DOUBLEATTACK = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'doubleattack.png')
+KEYWORD_SYMBOL_REGENERATION = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'regeneration.png')
+KEYWORD_SYMBOL_TOUGH = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'tough.png')
+KEYWORD_SYMBOL_FROSTBITE = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'frostbite.png')
+KEYWORD_SYMBOL_ELUSIVE = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'elusive.png')
+KEYWORD_SYMBOL_LIFESTEAL = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'lifesteal.png')
+KEYWORD_SYMBOL_QUICKATTACK = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'quickattack.png')
+KEYWORD_SYMBOL_BARRIER = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'barrier.png')
+KEYWORD_SYMBOL_EPHEMERAL = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'ephemeral.png')
+KEYWORD_SYMBOL_CHALLENGER = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'challenger.png')
+KEYWORD_SYMBOL_FLEETING = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'fleeting.png')
+KEYWORD_SYMBOL_FEARSOME = os.path.join(TEMPLATE_DIR, 'lor-symbol.mse-symbol-font', 'fearsome.png')
+
+# If text is processed
+keyword_symbols_map = {
+ 'stun': KEYWORD_SYMBOL_STUN,
+ 'overwhelm': KEYWORD_SYMBOL_OVERWHELM,
+ 'last breath': KEYWORD_SYMBOL_LASTBREATH,
+ 'double attack': KEYWORD_SYMBOL_DOUBLEATTACK,
+ 'regeneration': KEYWORD_SYMBOL_REGENERATION,
+ 'tough': KEYWORD_SYMBOL_TOUGH,
+ 'frostbite': KEYWORD_SYMBOL_FROSTBITE,
+ 'elusive': KEYWORD_SYMBOL_ELUSIVE,
+ 'lifesteal': KEYWORD_SYMBOL_LIFESTEAL,
+ 'quick attack': KEYWORD_SYMBOL_QUICKATTACK,
+ 'barrier': KEYWORD_SYMBOL_BARRIER,
+ 'ephemeral': KEYWORD_SYMBOL_EPHEMERAL,
+ 'challenger': KEYWORD_SYMBOL_CHALLENGER,
+ 'fleeting': KEYWORD_SYMBOL_FLEETING,
+ 'fearsome': KEYWORD_SYMBOL_FEARSOME
+}

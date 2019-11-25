@@ -1,4 +1,5 @@
 import definitions
+from src import image_tools
 
 from PIL import Image
 from PIL import ImageFont
@@ -18,22 +19,29 @@ class UnitCard(object):
     def construct_card(self):
         border = Image.open(self.border_path)
         border_draw = ImageDraw.Draw(border)
+
         # Construct mana cost:
         font = ImageFont.truetype(definitions.FONT_BEAUFORT, definitions.FONT_SZ_MANA)
-
-        # Drawing mana
-        if len(self.mana) == 1:
-            border_draw.text(definitions.POS_MANA_SD, self.mana, font=font, fill=definitions.OFF_WHITE)
-        elif len(self.mana) == 2:
-            border_draw.text(definitions.POS_MANA_DD, self.mana, font=font, fill=definitions.OFF_WHITE)
+        (w,h), (offset_x, offset_y) = font.font.getsize(self.mana)
+        pos = image_tools.center_align((0,0,w,h), definitions.POS_MANA, vertical=True)
+        border_draw.text((pos[0],pos[1]-offset_y), self.mana, font=font, fill=definitions.OFF_WHITE)
 
         # Drawing health
         font = ImageFont.truetype(definitions.FONT_BEAUFORT, definitions.FONT_SZ_HPPWR)
-        if len(self.hp) == 1:
-            border_draw.text(definitions.POS_HP_SD, self.hp, font=font, fill=definitions.OFF_WHITE)
-        if len(self.hp) == 2:
-            raise NotImplementedError()
-            
+        (w,h), (offset_x, offset_y) = font.font.getsize(self.hp)
+        pos = image_tools.center_align((0,0,w,h), definitions.POS_HP, vertical=True)
+        border_draw.text((pos[0],pos[1]-offset_y), self.hp, font=font, fill=definitions.OFF_WHITE)
+
+        # Drawing power
+        (w,h), (offset_x, offset_y) = font.font.getsize(self.pwr)
+        pos = image_tools.center_align((0,0,w,h), definitions.POS_PWR, vertical=True)
+        border_draw.text((pos[0],pos[1]-offset_y), self.pwr, font=font, fill=definitions.OFF_WHITE)
+
+        # Drawing text:
+        font = ImageFont.truetype(definitions.FONT_PADUK, definitions.FONT_SZ_DESCRIPTION)
+        image_tools.compose_keyword(border, "Quick jAttack", font)
+
+        print("Saving image")
         border.save("./test.png")
 
     def construct_card_tester(self):
@@ -52,5 +60,5 @@ class UnitCard(object):
 
 
 if __name__ == '__main__':
-    uc = UnitCard("4","3","3",definitions.FRAME_CHAMPION_LVLUP,"")
+    uc = UnitCard("179","10","10",definitions.FRAME_CHAMPION_BASE,"")
     uc.construct_card()

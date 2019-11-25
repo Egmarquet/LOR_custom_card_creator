@@ -11,8 +11,6 @@ class UnitCard(object):
         self.pwr = pwr
         self.mana = mana
 
-    def set_image
-
 def horizontal_split(ref, split_pts):
     if not all([i<=ref.size[0] and i>=0 for i in split_pts]):
         raise ValueError("Split position out of range")

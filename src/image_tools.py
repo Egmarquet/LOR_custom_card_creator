@@ -1,24 +1,42 @@
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
+import re
+import definitions
 import sys
 # Runeterra spell font:
 # 36 point
 # Good min font size?
 
 
-def get_text_center(outer_width, inner_width):
+def get_text_center(width_outer, width_inner, offset = 0):
     """
     Returns x position of text image centered on img
     """
-    center = int(outer_width/2.0 - inner_width/2.0)
-    return center
+    pos_x = int((w_outer - w_inner)/2.0)
+    return pos_x + offset
 
-def draw_text(img, text, font, pos, color=(0,0,0,255)):
-    draw = ImageDraw.Draw(img)
-    draw.text((center_pos,y_offset),text, font=font, fill=color)
+def center_align(bounds_inner, bounds_outer, horizontal=True, vertical=False):
+    """
+    Given a bounding box of (topleft_x, topleft_y, botright_x, botright_y)
+    Return a bounding box centered the center of bounds_outer
+    """
+    bounds = list(bounds_inner)
 
-    return img
+    if horizontal:
+        w_inner = bounds_inner[2] - bounds_inner[0]
+        w_outer = bounds_outer[2] - bounds_outer[0]
+        topleft_x = bounds_outer[0] + int((w_outer - w_inner)/2.0)
+        bounds = [topleft_x, bounds_inner[1], topleft_x+w_inner, bounds_inner[3]]
+
+    if vertical:
+        h_inner = bounds_inner[3] - bounds_inner[1]
+        h_outer = bounds_outer[3] - bounds_outer[1]
+        topleft_y = bounds_outer[1] + int((h_outer - h_inner)/2.0)
+        bounds[1] = topleft_y
+        bounds[3] = topleft_y + h_inner
+
+    return bounds
 
 def draw_text_block(img, lines, font, x_offset=0, y_offset=0, padding=0, color=(0,0,0,255)):
     """
@@ -91,6 +109,30 @@ def break_text(text, font, max_width):
         out.append((line_text, (curr_width,curr_height)))
 
     return out
+
+def compose_keyword(img, keyword, font):
+    symbol = None
+    symbol_sz = (0,0)
+    right_padding = 3
+
+    if keyword.lower() in definitions.keyword_symbols_map:
+        symbol = Image.open(definitions.keyword_symbols_map[keyword.lower()])
+        symbol_sz = symbol.size
+
+    _,h = font.getsize(keyword)
+    (w,base), (offset_x, offset_y) = font.font.getsize(keyword)
+
+    composite = Image.new('RGBA', (symbol_sz[0]+w+right_padding, h))
+    draw = ImageDraw.Draw(composite)
+    if symbol:
+        composite.paste(symbol,(0,h-symbol.size[1]))
+
+    draw.text((symbol_sz[0]+right_padding, 0), keyword, font=font, fill=definitions.KEYWORD_SYMBOL_COLOR)
+    composite.save("elusive.png")
+
+def compose_line(text, font, keyword_font):
+    keyword_break = [""]
+
 
 if __name__ == '__main__':
     font = ImageFont.truetype("./templates/fonts/Padauk/Fonts/padauk-book.ttf", 36)

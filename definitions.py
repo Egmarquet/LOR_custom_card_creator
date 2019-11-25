@@ -14,7 +14,7 @@ FONT_PADUK = os.path.join(FONTS_DIR, "padauk-book.ttf")
 # font sizes
 FONT_SZ_MANA = 90
 FONT_SZ_HPPWR = 70
-FONT_SZ_DESCRIPTION = 42
+FONT_SZ_DESCRIPTION = 41
 FONT_SZ_KEYWORD = NotImplementedError()
 
 # Static text positions

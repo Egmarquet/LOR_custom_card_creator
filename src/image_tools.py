@@ -19,7 +19,8 @@ def get_text_center(width_outer, width_inner, offset = 0):
 def center_align(bounds_inner, bounds_outer, horizontal=True, vertical=False):
     """
     Given a bounding box of (topleft_x, topleft_y, botright_x, botright_y)
-    Return a bounding box centered the center of bounds_outer
+    Return a bounding box equal to the size of bounds_inner, centered within
+    the bounds_outer box
     """
     bounds = list(bounds_inner)
 
@@ -110,29 +111,100 @@ def break_text(text, font, max_width):
 
     return out
 
-def compose_keyword(img, keyword, font):
-    symbol = None
-    symbol_sz = (0,0)
-    right_padding = 3
+def compose_keyword(keyword, font, symbol_padding=3):
+    """
+    Given a keyword, compose an image of the keyword + assosiated symbol
+    Note, if the keyword does not have an associated symbol, it will still return
+    with the color change
+    The size of the text is standard at 41 pt, and the scaling of the symbol
+    should be based on that.
 
+    TODO: Do symbol scaling and work on placement
+    """
+    composite = None
     if keyword.lower() in definitions.keyword_symbols_map:
         symbol = Image.open(definitions.keyword_symbols_map[keyword.lower()])
-        symbol_sz = symbol.size
+        sym_w, sym_h = symbol.size
 
-    _,h = font.getsize(keyword)
-    (w,base), (offset_x, offset_y) = font.font.getsize(keyword)
+        composite = compose_text(keyword, font, color=definitions.KEYWORD_SYMBOL_COLOR, offset=symbol_padding+sym_w)
+        composite.paste(symbol, (0,int((composite.size[1]-symbol.size[1])/2.0)))
 
-    composite = Image.new('RGBA', (symbol_sz[0]+w+right_padding, h))
+    else:
+        composite = compose_text(keyword, font, color=definitions.KEYWORD_SYMBOL_COLOR)
+
+    return composite
+
+def compose_line(text, font):
+    """
+    Keywords = <>
+    Unit references = {}
+    """
+    # Find keywords:
+    is_keyword = False
+    words = []
+    non_keyword = ""
+    potential_keywords = ""
+    for i,c in enumerate(text):
+        if not is_keyword and c != "<" and c != ">":
+            non_keyword+=c
+        if is_keyword and c != ">":
+            potential_keywords += c
+        if c == ">":
+            is_keyword = False
+            words.append((potential_keywords,True))
+            potential_keywords = ""
+        if c == "<" and not is_keyword:
+            is_keyword = True
+            words.append((non_keyword,False))
+            non_keyword = ""
+
+    if is_keyword and potential_keywords:
+        words.append((potential_keywords,False))
+    elif non_keyword:
+        words.append((non_keyword,False))
+
+    # Image compilation
+    # Setting hg standard
+    asc, desc = font.getmetrics()
+    imgs = []
+    max_w = 0
+    for block in words:
+        #if keyword
+        if block[1]:
+            img = compose_keyword(block[0], font)
+            imgs.append(img)
+            max_w += img.size[0]
+        #otherwise
+        else:
+            img = compose_text(block[0], font)
+            imgs.append(img)
+            max_w += img.size[0]
+
+    composite = Image.new('RGBA', (max_w, asc+desc))
+    offset = 0
+    for img in imgs:
+        composite.paste(img, (offset, 0))
+        offset += img.size[0]
+
+    return composite
+
+def compose_text(text, font, offset=0, color=(255,255,255)):
+    """
+    Compose a line of text onto an alpha channeled image
+    If called with the same font, this garentees easy stitching of different
+    text boxes
+    """
+    # Metrics
+
+    #hg baseline height
+    asc, desc = font.getmetrics()
+    (width, baseline), (offset_x, offset_y) = font.font.getsize(text)
+    # Drawing
+    composite = Image.new("RGBA", (width+offset,asc+desc))
     draw = ImageDraw.Draw(composite)
-    if symbol:
-        composite.paste(symbol,(0,h-symbol.size[1]))
+    draw.text((offset, 0), text ,font=font, fill=color)
 
-    draw.text((symbol_sz[0]+right_padding, 0), keyword, font=font, fill=definitions.KEYWORD_SYMBOL_COLOR)
-    composite.save("elusive.png")
-
-def compose_line(text, font, keyword_font):
-    keyword_break = [""]
-
+    return composite
 
 if __name__ == '__main__':
     font = ImageFont.truetype("./templates/fonts/Padauk/Fonts/padauk-book.ttf", 36)

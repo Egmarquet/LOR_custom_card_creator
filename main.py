@@ -39,10 +39,8 @@ class UnitCard(object):
 
         # Drawing text:
         font = ImageFont.truetype(definitions.FONT_PADUK, definitions.FONT_SZ_DESCRIPTION)
-        image_tools.compose_keyword(border, "Quick jAttack", font)
 
-        print("Saving image")
-        border.save("./test.png")
+        image_tools.compose_line("If I attack, grant me <overwhelm> this turn hg, else, <Elusive> or <Quick Attack>", font)
 
     def construct_card_tester(self):
 
@@ -56,6 +54,7 @@ class UnitCard(object):
             copy_draw = ImageDraw.Draw(copy)
             copy_draw.text(definitions.POS_MANA_DD, str(i), font=font, fill=(255,255,255))
             copy.save(f"test_{i}.png")
+
 
 
 

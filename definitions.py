@@ -22,9 +22,11 @@ FONT_SZ_DESCRIPTION = 41
 FONT_SZ_KEYWORD = NotImplementedError()
 
 # Static text positions
-POS_MANA = (54,54,131,151)
+POS_MANA = (23,33,158,170)
 POS_HP = (45, 881, 130, 944)
 POS_PWR = (553, 881, 638, 944)
+IMG_SIZE_CHAMPION = (623, 906)
+IMG_PLACEMENT = (28,57)
 
 # Text type enums
 class TextType(enum.Enum):
@@ -41,16 +43,19 @@ KEYWORD_BLUE = (73,160,248)
 DESCRIPTION_GREY = (225,238,236)
 
 # Max widths:
-MAX_WIDTH = 560
+CARD_WIDTH = 680
+CARD_HEIGHT = 1024
+MAX_WIDTH = 550
+MAX_DEPTH = 860
 
 # Champion Frames
 FRAME_CHAMPION_BASE = os.path.join(TEMPLATE_DIR, 'lor-champion-large.mse-style', 'frame1gem.png')
 FRAME_CHAMPION_LVLUP = os.path.join(TEMPLATE_DIR, 'lor-champion-large.mse-style', 'frame2gem.png')
 BAR_CHAMPION_LVLUP = os.path.join(TEMPLATE_DIR, 'lor-champion-large.mse-style', 'levelupbar.png')
 
+#
+DARKNESS_PATH = os.path.join(TEMPLATE_DIR,'lor-champion-large.mse-style','theencrouchingdarkness.png')
 # Champion card standards
-IMG_SIZE_CHAMPION = (623, 906)
-IMG_PLACEMENT = (28,57)
 
 # Follower Frames
 FRAME_FOLLOWER_COMMON = os.path.join(TEMPLATE_DIR, 'lor-follower-large.mse-style', 'framecommon.png')
@@ -93,3 +98,5 @@ keyword_symbols_map = {
  'fleeting': KEYWORD_SYMBOL_FLEETING,
  'fearsome': KEYWORD_SYMBOL_FEARSOME
 }
+
+#Keyword Icons

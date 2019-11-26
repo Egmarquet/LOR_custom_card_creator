@@ -1,6 +1,5 @@
 import definitions
 from src import image_tools
-
 from PIL import Image
 from PIL import ImageFont
 from PIL import ImageDraw
@@ -9,17 +8,102 @@ class UnitCard(object):
     """
     All should be strings
     """
-    def __init__(self, mana, hp, pwr, card_text, border_path, img_path):
+    def __init__(self, name, mana, hp, pwr, card_text, border_path, card_img_path):
+        self.name = name
         self.mana = mana
         self.hp = hp
         self.pwr = pwr
         self.card_text = card_text
         self.border_path = border_path
-        self.img_path = img_path
+        self.card_img_path = card_img_path
+
+    def construct(self):
+        composite = Image.new('RGBA', (definitions.CARD_WIDTH, definitions.CARD_HEIGHT))
+        darkness = Image.open(definitions.DARKNESS_PATH)
+        card_img = Image.open(self.card_img_path)
+        border = self.construct_border()
+        body = self.construct_body()
+
+        # Building layers
+        composite.paste(card_img, (28,57))
+        composite = Image.alpha_composite(composite, darkness)
+        composite = Image.alpha_composite(composite, border)
+        center = int((definitions.CARD_WIDTH-body.size[0])/2.0)
+        composite.paste(body,(center,definitions.MAX_DEPTH-body.size[1]),body)
+        composite.save('final.png')
+
+    def construct_border(self):
+        border = Image.open(self.border_path)
+
+        # Construct mana cost:
+        font = ImageFont.truetype(definitions.FONT_BEAUFORT, definitions.FONT_SZ_MANA)
+        img = self.construct_text(self.mana, font, definitions.POS_MANA[2]-definitions.POS_MANA[0], color=definitions.OFF_WHITE)
+        pos = image_tools.center_align((0,0,img.size[0],img.size[1]), definitions.POS_MANA, vertical=True)
+        border.paste(img, pos, img)
+
+        # Drawing health
+        font = ImageFont.truetype(definitions.FONT_BEAUFORT, definitions.FONT_SZ_HPPWR)
+        img = self.construct_text(self.hp, font, definitions.POS_HP[2]-definitions.POS_HP[0], color=definitions.OFF_WHITE)
+        pos = image_tools.center_align((0,0,img.size[0],img.size[1]), definitions.POS_HP, vertical=True)
+        border.paste(img, pos, img)
+
+        # Drawing power
+        img = self.construct_text(self.pwr, font, definitions.POS_PWR[2]-definitions.POS_PWR[0], color=definitions.OFF_WHITE)
+        pos = image_tools.center_align((0,0,img.size[0],img.size[1]), definitions.POS_PWR, vertical=True)
+        border.paste(img, pos, img)
+
+        return border
+
+    def construct_body(self):
+        """
+        Layering is different for each cart type
+        """
+        center_text_elements = []
+        # Drawing title
+        font = ImageFont.truetype(definitions.FONT_BEAUFORT, definitions.FONT_SZ_HPPWR)
+        img = self.construct_text(self.name, font, definitions.MAX_WIDTH, color=(255,555,255))
+        center_text_elements.append(img)
+
+        # Gathering images for Name, power, etc
+        # Drawing text:
+        font = ImageFont.truetype(definitions.FONT_PADUK, definitions.FONT_SZ_DESCRIPTION)
+        img = self.construct_card_text(font)
+        center_text_elements.append(img)
+        body = image_tools.stitch_images_vertical(center_text_elements, definitions.MAX_WIDTH)
+
+        return body
+
+    def construct_text(self, text, font, max_width, color):
+        """
+        Construct a line of text such that it is rescaled to fit inside
+        of a text box. This does not take font size into consideration
+        """
+        img = image_tools.compose_word(text, font, color)
+        if img.size[0] > max_width:
+            scale = float(max_width)/img.size[0]
+            img = img.resize((int(img.size[0]*scale), int(img.size[1]*scale)))
+        return img
+
+    def construct_card_text(self, font):
+        images = []
+        blocks = self.format_line(self.card_text)
+        asc, desc = font.getmetrics()
+        for text, type in blocks:
+            if text:
+                if type is definitions.TextType.KEYWORD:
+                    images.append(image_tools.compose_keyword(text, font, x_spacing=7))
+                elif type is definitions.TextType.REF:
+                    images.extend([image_tools.compose_word(t, font, color=definitions.KEYWORD_BLUE) for t in text.split(" ")])
+                else:
+                    images.extend([image_tools.compose_word(t, font, color=definitions.DESCRIPTION_GREY) for t in text.split(" ")])
+
+        composite = image_tools.compose_image_block_centered(images, definitions.MAX_WIDTH, asc+desc, y_padding=-18, x_spacing=7)
+
+        return composite
 
     def format_line(self, text):
         """
-        Separate non-key words from key-words, in order
+        Separate non key words from key-words, in order
         """
         # First sanity check.
         # If there are brackets without partners or nested brackets,
@@ -67,69 +151,7 @@ class UnitCard(object):
             out.append((curr, definitions.TextType.TEXT))
         return out
 
-    def construct_card(self):
-        border = Image.open(self.border_path)
-        border_draw = ImageDraw.Draw(border)
-
-        # Construct mana cost:
-        font = ImageFont.truetype(definitions.FONT_BEAUFORT, definitions.FONT_SZ_MANA)
-        (w,h), (offset_x, offset_y) = font.font.getsize(self.mana)
-        pos = image_tools.center_align((0,0,w,h), definitions.POS_MANA, vertical=True)
-        border_draw.text((pos[0],pos[1]-offset_y), self.mana, font=font, fill=definitions.OFF_WHITE)
-
-        # Drawing health
-        font = ImageFont.truetype(definitions.FONT_BEAUFORT, definitions.FONT_SZ_HPPWR)
-        (w,h), (offset_x, offset_y) = font.font.getsize(self.hp)
-        pos = image_tools.center_align((0,0,w,h), definitions.POS_HP, vertical=True)
-        border_draw.text((pos[0],pos[1]-offset_y), self.hp, font=font, fill=definitions.OFF_WHITE)
-
-        # Drawing power
-        (w,h), (offset_x, offset_y) = font.font.getsize(self.pwr)
-        pos = image_tools.center_align((0,0,w,h), definitions.POS_PWR, vertical=True)
-        border_draw.text((pos[0],pos[1]-offset_y), self.pwr, font=font, fill=definitions.OFF_WHITE)
-
-        # Drawing text:
-        font = ImageFont.truetype(definitions.FONT_PADUK, definitions.FONT_SZ_DESCRIPTION)
-        card_text = construct_card_text(font)
-        
-        #line = image_tools.compose_line("<Play:> If I attack, grant me <overwhelm> this turn, <Elusive> or <Quick Attack>", font)
-        print(format_line(sentence))
-
-    def construct_card_text(self, font):
-        images = []
-        blocks = self.format_line(self.card_text)
-        asc, desc = font.getmetrics()
-        for text, type in blocks:
-            if text:
-                if type is definitions.TextType.KEYWORD:
-                    images.append(image_tools.compose_keyword(text, font, x_spacing=7))
-                elif type is definitions.TextType.REF:
-                    images.extend([image_tools.compose_word(t, font, color=definitions.KEYWORD_BLUE) for t in text.split(" ")])
-                else:
-                    images.extend([image_tools.compose_word(t, font, color=definitions.DESCRIPTION_GREY) for t in text.split(" ")])
-
-        out = image_tools.compose_image_block_centered(images, definitions.MAX_WIDTH, asc+desc, y_padding=-18, x_spacing=7)
-
-        return out
-
-    def construct_card_tester(self):
-        border = Image.open(self.border_path)
-        border_draw = ImageDraw.Draw(border)
-        # Construct mana cost:
-        font = ImageFont.truetype(definitions.FONT_BEAUFORT, definitions.FONT_SZ_MANA)
-
-        for i in range(10,20):
-            copy = border.copy()
-            copy_draw = ImageDraw.Draw(copy)
-            copy_draw.text(definitions.POS_MANA_DD, str(i), font=font, fill=(255,255,255))
-            copy.save(f"test_{i}.png")
-
-
-
-
 if __name__ == '__main__':
-    card_text = "<Play:> This unit gains <Elusive> this turn and adds a {Mystic Shot} to the hand"
-    ezreal_card = "<Nexus Strike:> Create a <Fleeting> 0 cost {Mystic Shot}"
-    card_text = "<Support:> Give my supported ally +3|+0 and <overwhelm> this roujgnd."
-    uc = UnitCard("179","10","10",card_text,definitions.FRAME_CHAMPION_BASE,"")
-    uc.construct_card_text()
+    card_text = "<Support:> Give my supported ally +5|+5 and <Stun> all enemies with my epic dab lmao gottem."
+    uc = UnitCard("JONAH OF THE BEACH","7","4","4",card_text,definitions.FRAME_CHAMPION_LVLUP,".\\test_images\\test_dab.png")
+    uc.construct()

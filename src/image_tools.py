@@ -39,26 +39,40 @@ def center_align(bounds_inner, bounds_outer, horizontal=True, vertical=False):
 
     return bounds
 
-def draw_text_block(img, lines, font, x_offset=0, y_offset=0, padding=0, color=(0,0,0,255)):
+def stitch_images(images, height, x_spacing=0):
     """
-    Given a list of lines with dimensions, draw them onto the image, beginning
-    at x,y and decending downwards
-    This will auto center the text, however the y offset should be configured to
-    place the text at the correct height on the image
-
-    Args:
-        img (PIL.Image):
-        lines List:[Tuple:(String,Tuple(int,int))]:
-        font (PIL.ImageFont):
+    Stitch a list images from left to right
     """
-    draw = ImageDraw.Draw(img)
-    for line in lines:
-        text, (w, h) = line
-        center_pos = get_text_center(img.width, w)
-        draw.text((center_pos,y_offset),text, font=font, fill=color)
-        y_offset += h + padding
+    total_width = -1*x_spacing # don't pad out left most
+    for img in images:
+        total_width+=img.size[0] + x_spacing
 
-    img.save("./test/test.png")
+    composite = Image.new('RGBA', (total_width, height))
+    offset = 0
+    for img in images:
+        composite.paste(img, (offset, 0))
+        offset += img.size[0] + x_spacing
+
+    return composite
+
+def stitch_images_vertical(images, width, y_spacing=0):
+    """
+    Stitch images in a collumn. This will attempt to horizontally center
+    all the stitched images. Images are stiched top to bottom in order
+    that they appear in the list
+    """
+    max_height = -1*y_spacing
+    for img in images:
+        max_height += img.size[1] + y_spacing
+
+    y_offset = 0
+    composite = Image.new('RGBA', (width, max_height))
+    for img in images:
+        center = int((width - img.size[0])/2.0)
+        composite.paste(img, (center, y_offset), img)
+        y_offset += img.size[1] + y_spacing
+
+    return composite
 
 def compose_keyword(keyword, font, x_spacing=0, symbol_spacing=0):
     """
@@ -90,22 +104,6 @@ def compose_keyword(keyword, font, x_spacing=0, symbol_spacing=0):
         words = [w.capitalize() for w in keyword.split(" ")]
         words = [compose_word(word, font, color=definitions.KEYWORD_GOLD) for word in words]
         composite = stitch_images(words, asc+desc, x_spacing=x_spacing)
-
-    return composite
-
-def stitch_images(images, height, x_spacing=0):
-    """
-    Stitch a list images from left to right
-    """
-    total_width = -1*x_spacing # don't pad out left most
-    for img in images:
-        total_width+=img.size[0] + x_spacing
-
-    composite = Image.new('RGBA', (total_width, height))
-    offset = 0
-    for img in images:
-        composite.paste(img, (offset, 0))
-        offset += img.size[0] + x_spacing
 
     return composite
 
@@ -160,13 +158,3 @@ def compose_image_block_centered(images, max_width, height, x_spacing=0, y_paddi
         y_offset += height + y_padding
 
     return composit
-
-if __name__ == '__main__':
-    font = ImageFont.truetype("./templates/fonts/Padauk/Fonts/padauk-book.ttf", 36)
-    text = "If you've played 39 cards with different names this game, summon an amazing thing and win the game"
-    img = Image.open("./templates/spells/slow/slow_rare.png")
-    draw = ImageDraw.Draw(img)
-    color = (0,0,0,255)
-
-    #img.show()
-    draw_text_block(img,break_text(text, font, 500),font, y_offset=600)

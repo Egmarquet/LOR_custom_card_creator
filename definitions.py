@@ -1,6 +1,8 @@
 import os
 from PIL import Image
 from PIL import ImageFont
+import enum
+
 
 # Root directory
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -11,6 +13,8 @@ FONTS_DIR = os.path.join(ROOT_DIR, 'fonts')
 FONT_BEAUFORT = os.path.join(FONTS_DIR, "Beaufort for LOL Bold.ttf")
 FONT_UNIVERSL = os.path.join(FONTS_DIR, "UniversLTStd-UltraCn.otf")
 FONT_PADUK = os.path.join(FONTS_DIR, "padauk-book.ttf")
+FONT_PADUK_BOLD = os.path.join(FONTS_DIR, "padauk-bold.ttf")
+
 # font sizes
 FONT_SZ_MANA = 90
 FONT_SZ_HPPWR = 70
@@ -22,11 +26,22 @@ POS_MANA = (54,54,131,151)
 POS_HP = (45, 881, 130, 944)
 POS_PWR = (553, 881, 638, 944)
 
+# Text type enums
+class TextType(enum.Enum):
+    TEXT = 0
+    KEYWORD = 1
+    REF = 2
+
 # Colors:
 WHITE = (255,255,255)
 OFF_WHITE = (246,227,227)
 BLACK = (0,0,0)
-KEYWORD_SYMBOL_COLOR = (250,214,90)
+KEYWORD_GOLD = (250,214,90)
+KEYWORD_BLUE = (73,160,248)
+DESCRIPTION_GREY = (225,238,236)
+
+# Max widths:
+MAX_WIDTH = 560
 
 # Champion Frames
 FRAME_CHAMPION_BASE = os.path.join(TEMPLATE_DIR, 'lor-champion-large.mse-style', 'frame1gem.png')

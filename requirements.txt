@@ -1,17 +1,15 @@
-Decksofrunterra:
-  Image sizes
-Card types to handle:
-  3 types of spells (burst, slow, fast)
-  4 types of rarity
-  6 region types
-    - spell and champion cards
+TODO:
+  Features:
+  - Need to put into keyword icon support (large and small)
+  - Need to add guassianblur to sides and bottoms of card images
+  - Have not yet done formatting for tribes or champion levelup bars
+  - base text size for names is still unknown
+  - Support for spells and their positional constants has not even been
+    attempted yet
 
-Champion Cards:
-  Art:
-    x,y: 28,57
-    w,h: 623, 906
-    L border: 30px wide
-    R border : 27ppx wide
-    Going to assume the top border is static, however this might not be the case
-    Borders have a gradient from opaque to more transparent from bottom to top
-    L border has some sort of blueish tint to it
+  Other:
+  - The naive PIL draw is bad, look into aggdraw to get proper anti-aliasing
+  - Code is VERY messy needs a reorganization, especially the definitions.py
+  - much of the lor-template-pack is bloated and with bad file paths,
+    should slim it and reorganize
+  - no real documentation lmaooo

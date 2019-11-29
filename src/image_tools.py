@@ -1,20 +1,12 @@
-from PIL import Image
-from PIL import ImageFont
-from PIL import ImageDraw
+from PIL import Image, ImageDraw, ImageFont, ImageChops, ImageEnhance
 import re
-import definitions
 import sys
 # Runeterra spell font:
 # 36 point
 # Good min font size?
 
-
-def get_text_center(width_outer, width_inner, offset = 0):
-    """
-    Returns x position of text image centered on img
-    """
-    pos_x = int((w_outer - w_inner)/2.0)
-    return pos_x + offset
+def size(bounds):
+    return (bounds[2]-bounds[0],bounds[3]-bounds[1])
 
 def center_align(bounds_inner, bounds_outer, horizontal=True, vertical=False):
     """
@@ -107,25 +99,56 @@ def compose_keyword(keyword, font, x_spacing=0, symbol_spacing=0):
 
     return composite
 
-def compose_word(word, font, color):
+def render_text(text, font, color):
+    """
+    Text rendering with proper anti-aliasing
+    Credit to
+        https://nedbatchelder.com/blog/200801/truly_transparent_text_with_pil.html
+    """
     asc, desc = font.getmetrics()
-    w = font.getsize(word)[0]
-    img = Image.new("RGBA", (w ,asc+desc))
-    draw = ImageDraw.Draw(img)
-    draw.text((0,0), word, font=font, fill=color)
+    w = font.getsize(text)[0]
+    # Setting up image channels
+    im = Image.new("RGB", (w,asc+desc), (0,0,0))
+    alpha = Image.new("L", im.size, "black")
 
-    return img
+    # Make a grayscale image of the font, white on black.
+    imtext = Image.new("L", im.size, 0)
+    drtext = ImageDraw.Draw(imtext)
+    drtext.fontmode = "1"
+    drtext.text((0,0), text, font=font, fill="white")
+
+    # Add the white text to our collected alpha channel. Gray pixels around
+    # the edge of the text will eventually become partially transparent
+    # pixels in the alpha channel.
+    alpha = ImageChops.lighter(alpha, imtext)
+    # Make a solid color, and add it to the color layer on every pixel
+    # that has even a little bit of alpha showing.
+    solidcolor = Image.new("RGBA", im.size, color)
+    immask = Image.eval(imtext, lambda p: 255 * (int(p != 0)))
+
+    im = Image.composite(solidcolor, im, immask)
+    im.putalpha(alpha)
+
+    return im
 
 def compose_image_block_centered(images, max_width, height, x_spacing=0, y_padding=0, strict=False):
     """
     Given a series of images, attempt stitch them left to right such that
     appending new images does not exceed max_width. If a particular image does
-    exceed it, start a new line. This will also try to center align each line
+    exceed it, start a new line. The rendered output will try to center each line
 
     If strict==False, then a single image that exceeds max_width can be placed
     on its own line. If strict is True, then this method will throw a ValueError()
+
+    Args:
+        images (List): List of PIL.Image objects
+        max_width (int): Max width of a line in px
+        height (int): Height of each line
+        x_spacing (int): The right spacing between each image
+        y_padding (int): Padding added to the bottom of each image, increasing total height
+        strict (bool): See above
     """
-    lines = [] # Will be a list of list of images
+    lines = [] # Will be a list of list of images on each line
     curr = []
     width = -x_spacing
     for img in images:
@@ -151,10 +174,32 @@ def compose_image_block_centered(images, max_width, height, x_spacing=0, y_paddi
     # Composing final image
     max_height = len(lines)*(height+y_padding) - y_padding
     y_offset = 0
-    composit = Image.new('RGBA', (max_width, max_height))
+    composite = Image.new('RGBA', (max_width, max_height))
     for line in lines:
         center = int((max_width - line.size[0])/2)
-        composit.paste(line, (center, y_offset), line)
+        composite.paste(line, (center, y_offset), line)
         y_offset += height + y_padding
 
-    return composit
+    return composite
+
+def process_img(img, pos, max_size):
+    composite = Image.new('RGBA', max_size)
+    if img.mode != 'RGBA':
+        img = img.convert('RGBA')
+    composite.paste(img, pos, img)
+
+    return composite
+
+def reduce_opacity(img, percent):
+    alpha = img.split()[3]
+    alpha = ImageEnhance.Brightness(alpha).enhance(percent)
+    img.putalpha(alpha)
+    return img
+
+def blur(img, bounds):
+    pass
+
+def resize(img, bounds):
+    scale = float(bounds[2]-bounds[0])/img.size[0]
+    img = img.resize((int(img.size[0]*scale), int(img.size[1]*scale)))
+    return img

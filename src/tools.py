@@ -40,50 +40,49 @@ def get_scale(size_1, size_2):
     """
     return (float(size_1[1])/size_2[1],float(size_1[1])/size_2[1])
 
-def draw_text_in_box(img, text, font_tup, bounds):
+def draw_text_in_box(base, text, font_tup, bounds):
     """
     Draws a single line of text such that it does not exceed bounds
-    Most efficient as it does not hold text in memory, rather tries to
-    just alter the base image
-    """
-    with img:
-        with Drawing() as draw:
-            font_path, font_size, color = font_tup
-            draw.font = font_path
-            draw.font_size = font_size
-            draw.fill_color = color
 
-            metrics = draw.get_font_metrics(img, text)
-            scale = (bounds[3]-bounds[1])/metrics.text_width
-            # If the image is too wide for the bounding box
-            if scale < 1.0:
-                draw.font_size = int(font_size*scale)
-                metrics = draw.get_font_metrics(img, text)
-            # Centering and drawing
-            asc = int(metrics.ascender)
-            desc = int(-1*metrics.descender)
-            center = center_align((0,0,metrics.text_width,asc+desc),bounds, vertical=True)
-            draw.text(x=center[0],y=center[1]+asc,body=text)
-            draw(img)
-            return img.clone()
+    Returns a mutated img
+    """
+    with Drawing() as draw:
+        font_path, font_size, color = font_tup
+        draw.font = font_path
+        draw.font_size = font_size
+        draw.fill_color = color
+
+        metrics = draw.get_font_metrics(base, text)
+        scale = (bounds[3]-bounds[1])/metrics.text_width
+        # If the image is too wide for the bounding box
+        if scale < 1.0:
+            draw.font_size = int(font_size*scale)
+            metrics = draw.get_font_metrics(base, text)
+        # Centering and drawing
+        asc = int(metrics.ascender)
+        desc = int(-1*metrics.descender)
+        center = center_align((0,0,metrics.text_width,asc+desc),bounds, vertical=True)
+        draw.text(x=center[0],y=center[1]+asc,body=text)
+        draw(base)
+    return base
 
 def text_to_image(text, font_tup, icon=None):
     out = Image(height=1,width=1)
-    with out:
-        with Drawing() as draw:
-            font_path, font_size, color = font_tup
-            draw.font = font_path
-            draw.font_size = font_size
-            draw.fill_color = color
+    with Drawing() as draw:
+        font_path, font_size, color = font_tup
+        draw.font = font_path
+        draw.font_size = font_size
+        draw.fill_color = color
 
-            metrics = draw.get_font_metrics(out, text)
-            asc = int(metrics.ascender)
-            desc = int(-1*metrics.descender)
-            width = metrics.text_width
-            offset = 0
-            if icon:
-                # scaling icon
-                icon_img = Image(filename=icon)
+        metrics = draw.get_font_metrics(out, text)
+        asc = int(metrics.ascender)
+        desc = int(-1*metrics.descender)
+        width = metrics.text_width
+        offset = 0
+        if icon:
+            # scaling icon
+            icon_img = Image(filename=icon)
+            with icon_img:
                 scale = (asc+desc)/icon_img.height
                 icon_img.resize(int(scale*icon_img.width), int(scale*icon_img.height))
 
@@ -91,13 +90,12 @@ def text_to_image(text, font_tup, icon=None):
                 offset = icon_img.width
                 out.resize(int(icon_img.width+width),int(asc+desc))
                 out.composite(icon_img)
-            else:
-                out.resize(int(width),int(asc+desc))
+        else:
+            out.resize(int(width),int(asc+desc))
 
-            draw.text(x=offset,y=asc,body=text)
-            draw(out)
-
-            return out.clone()
+        draw.text(x=offset,y=asc,body=text)
+        draw(out)
+    return out
 
 def compose_image_block_centered(images, max_width, height, x_spacing=0, y_padding=0, strict=False):
     """
@@ -142,7 +140,8 @@ def compose_image_block_centered(images, max_width, height, x_spacing=0, y_paddi
 
 def stitch_images_horizontal(images, height, x_spacing=0):
     """
-    Stitch a list images from left to right
+    Stitch a list images from left to right. This will attempt
+    to vertically center all images
     """
     total_width = -1*x_spacing # don't pad out left most
     for img in images:
@@ -151,13 +150,12 @@ def stitch_images_horizontal(images, height, x_spacing=0):
     composite = Image(width=int(total_width), height=int(height))
     offset = 0
 
-    with composite:
-        with Drawing() as draw:
-            for img in images:
-                composite.composite(img, left=int(offset), top=0)
-                offset += img.size[0] + x_spacing
+    for img in images:
+        with img:
+            composite.composite(img, left=int(offset), top=0)
+            offset += img.size[0] + x_spacing
 
-            return composite.clone()
+    return composite
 
 def stitch_images_vertical(images, width, y_spacing=0):
     """
@@ -171,13 +169,13 @@ def stitch_images_vertical(images, width, y_spacing=0):
 
     y_offset = 0
     composite = Image(width=width, height=max_height)
-    with composite:
-        with Drawing() as draw:
-            for img in images:
-                center = int((width - img.width)/2.0)
-                composite.composite(img, left=center, top=y_offset)
-                y_offset += img.size[1] + y_spacing
-            return composite.clone()
+    for img in images:
+        with img:
+            center = int((width - img.width)/2.0)
+            composite.composite(img, left=center, top=y_offset)
+            y_offset += img.size[1] + y_spacing
+
+    return composite
 
 def to_layer(img, size, pos):
     """

@@ -29,15 +29,16 @@ class UnitCard(object):
         w,h = definitions.CARD_SIZE
         base = Image(width=w,height=h)
         base = tools.to_layer(Image(filename=self.img_path), definitions.CARD_SIZE, definitions.POS_UNIT_IMG)
-        base.composite(Image(filename=frames.DARKNESS))
+        test = Image(filename=frames.DARKNESS)
+        base.composite(test)
         base.composite(Image(filename=self.frame_path))
 
         if self.mana:
-            base = tools.draw_text_in_box(base, self.hp, fonts.FONT_MANA, definitions.POS_MANA)
+            tools.draw_text_in_box(base, self.hp, fonts.FONT_MANA, definitions.POS_MANA)
         if self.hp:
-            base = tools.draw_text_in_box(base, self.hp, fonts.FONT_HPPWR, definitions.POS_HP)
+            tools.draw_text_in_box(base, self.hp, fonts.FONT_HPPWR, definitions.POS_HP)
         if self.pwr:
-            base = tools.draw_text_in_box(base, self.hp, fonts.FONT_HPPWR, definitions.POS_PWR)
+            tools.draw_text_in_box(base, self.hp, fonts.FONT_HPPWR, definitions.POS_PWR)
 
         # Making body text
         body = []
@@ -57,6 +58,7 @@ class UnitCard(object):
             word_images = []
             for word, font_tup, icon in ft:
                 word_images.append(tools.text_to_image(word, font_tup, icon))
+
             if word_images:
                 text_img = tools.compose_image_block_centered(word_images, definitions.UNIT_TEXT_MAX_WIDTH, word_images[0].height, x_spacing=metrics.text_width)
                 body.append(text_img)
@@ -66,17 +68,32 @@ class UnitCard(object):
             body_img = tools.stitch_images_vertical(body, definitions.UNIT_TEXT_MAX_WIDTH)
             x = int((definitions.CARD_SIZE[0] - definitions.UNIT_TEXT_MAX_WIDTH)/2.0)
             y = definitions.UNIT_TEXT_MAX_DEPTH - body_img.height
-            base.composite(body_img, left=x, top=y)
+            with body_img:
+                base.composite(body_img, left=x, top=y)
 
-        display(base)
+        return base
 
     def compose_keywords(self):
         out = None
 
         if len(self.kws) < 1:
             return None
+
         elif len(self.kws) == 1:
-            pass
+            kw = self.kws[0]
+            kw_icon = keywords.icons[keywords.symbols_map[kw.lower()]]
+            kw_text = kw.upper()
+            kw_img = tools.text_to_image(kw_text, fonts.FONT_KEYWORD_ICON, kw_icon)
+            left, center, right =  (Image(filename=keywords.ICON_LEFT),Image(filename=keywords.ICON_CENTER),Image(filename=keywords.ICON_RIGHT))
+            if kw_img.width > center.width:
+                scale = kw_img.width/center.width
+                center.resize(int(center.width*scale),center.height)
+            kw_background = tools.stitch_images_horizontal((left,center,right),left.height)
+            l,t,_,_ = tools.center_align((0,0,kw_img.width,kw_img.height),(0,0,kw_background.width,kw_background.height), vertical=True)
+            kw_background.composite(kw_img, left=l, top=t)
+
+            return kw_background
+
         elif len(self.kws) <= 5 and len(self.kws) >= 1:
             kw_mini = Image(filename=keywords.ICON_MINI)
             kw_dock = []
@@ -87,7 +104,7 @@ class UnitCard(object):
                 l,t,_,_ = tools.center_align((0,0,kw_icon.width,kw_icon.height),(0,0,kw_copy.width,kw_copy.height),vertical=True)
                 kw_copy.composite(kw_icon, left=l, top=t)
                 kw_dock.append(kw_copy)
-            out= tools.stitch_images_horizontal(kw_dock,kw_mini.height,x_spacing=20)
+            out = tools.stitch_images_horizontal(kw_dock,kw_mini.height,x_spacing=20)
 
         return out
 
@@ -168,6 +185,7 @@ if __name__ == '__main__':
     text = "<Quick Attack>: I attack the enemy nexus and summmon 3 [Small Cows] with <fearsome>"
     frame_path = frames.UNIT_COMMON
     img_path = "..\\test\\test_images\\cow.jpg"
-    kws = ['barrier', 'elusive']
+    kws = ['barrier']
     uc = UnitCard(name, hp, mp, pwr, text, frame_path, img_path, kws=kws)
     img = uc.construct()
+    display(img)

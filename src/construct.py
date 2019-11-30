@@ -1,12 +1,18 @@
 import sys
 sys.path.append("..")
 
-from PIL import Image, ImageDraw, ImageFont
-import image_tools
-from resources import colors, definitions, enums, fonts, frames, keywords
+from PIL import ImageDraw, ImageFont
+from PIL import Image as PILImage
+import tools
+from resources import definitions, enums, fonts, frames, keywords
+from wand.font import Font
+from wand.image import Image
+from wand.color import Color
+from wand.drawing import Drawing
+from wand.display import display
 
 class UnitCard(object):
-    def __init__(self, name, hp, mana, pwr, text, frame_path, img_path, size=definitions.CARD_SIZE):
+    def __init__(self, name, hp, mana, pwr, text, frame_path, img_path, kws=None, size=definitions.CARD_SIZE):
         self.name = name
         self.mana = mana
         self.hp = hp
@@ -14,65 +20,76 @@ class UnitCard(object):
         self.text = text
         self.frame_path = frame_path
         self.img_path = img_path
+        self.kws = kws
         self.size = size
         self.current_layer = []
         self.layers = []
 
     def construct(self):
-        image = Image.open(self.img_path)
+        w,h = definitions.CARD_SIZE
+        base = Image(width=w,height=h)
+        base = tools.to_layer(Image(filename=self.img_path), definitions.CARD_SIZE, definitions.POS_UNIT_IMG)
+        base.composite(Image(filename=frames.DARKNESS))
+        base.composite(Image(filename=self.frame_path))
 
-        # Adding base layers
-        darkness = Image.open(frames.DARKNESS)
-        darkness = image_tools.reduce_opacity(darkness, 0.6)
-        frame = Image.open(self.frame_path)
-        self.add_to_curr_layer(image, definitions.UNIT_IMG_PLACEMENT)
-        self.append_curr_layer()
-        self.add_to_curr_layer(darkness, (0,0))
-        self.append_curr_layer()
-        self.add_to_curr_layer(frame, (0,0))
-        self.append_curr_layer()
-
-        # Adding border text:
         if self.mana:
-            img = image_tools.render_text(self.mana, fonts.FONT_MANA[0], fonts.FONT_MANA[1])
-            if img.size[0] > image_tools.size(definitions.POS_MANA)[0]:
-                img = image_tools.resize(img, definitions.POS_MANA)
-            pos = image_tools.center_align((0,0,img.size[0],img.size[1]), definitions.POS_MANA, vertical=True)
-            self.add_to_curr_layer(img, pos)
-
-        # Adding hp and power values
+            base = tools.draw_text_in_box(base, self.hp, fonts.FONT_MANA, definitions.POS_MANA)
         if self.hp:
-            img = image_tools.render_text(self.hp, fonts.FONT_HPWPR[0], fonts.FONT_HPWPR[1])
-            if img.size[0] > image_tools.size(definitions.POS_HP)[0]:
-                img = image_tools.resize(img, definitions.POS_HP)
-            pos = image_tools.center_align((0,0,img.size[0],img.size[1]), definitions.POS_HP, vertical=True)
-            self.add_to_curr_layer(img, pos)
-
+            base = tools.draw_text_in_box(base, self.hp, fonts.FONT_HPPWR, definitions.POS_HP)
         if self.pwr:
-            img = image_tools.render_text(self.hp, fonts.FONT_HPWPR[0], fonts.FONT_HPWPR[1])
-            if img.size[0] > image_tools.size(definitions.POS_PWR)[0]:
-                img = image_tools.resize(img, definitions.POS_PWR)
-            pos = image_tools.center_align((0,0,img.size[0],img.size[1]), definitions.POS_PWR, vertical=True)
-            self.add_to_curr_layer(img, pos)
+            base = tools.draw_text_in_box(base, self.hp, fonts.FONT_HPPWR, definitions.POS_PWR)
+
+        # Making body text
+        body = []
+        if self.name:
+            name_img = tools.text_to_image(self.name.upper(), fonts.FONT_NAME)
+            if name_img.width > definitions.UNIT_TEXT_MAX_WIDTH:
+                scale = definitions.UNIT_TEXT_MAX_WIDTH/name_img.width
+                name_img.resize(int(scale*name_img.width), int(scale*name_img.height))
+            body.append(name_img)
+
+        if self.kws:
+            body.append(self.compose_keywords())
 
         if self.text:
-            # Adding text
-            formatted_text = self.format_text(self.text)
-            img = image_tools.render_text(self.text, fonts.FONT_KEYWORD[0], fonts.FONT_KEYWORD[1])
-            pos = image_tools.center_align((0,0,img.size[0],img.size[1]), (0,0,definitions.CARD_SIZE[0], definitions.CARD_SIZE[1]),vertical=True)
-            self.add_to_curr_layer(img, pos)
+            metrics = fonts.get_metrics(fonts.FONT_TEXT[0],fonts.FONT_TEXT[1])
+            ft = self.format_text(self.text)
+            word_images = []
+            for word, font_tup, icon in ft:
+                word_images.append(tools.text_to_image(word, font_tup, icon))
+            if word_images:
+                text_img = tools.compose_image_block_centered(word_images, definitions.UNIT_TEXT_MAX_WIDTH, word_images[0].height, x_spacing=metrics.text_width)
+                body.append(text_img)
 
-            print(formatted_text)
+        # compositing body
+        if body:
+            body_img = tools.stitch_images_vertical(body, definitions.UNIT_TEXT_MAX_WIDTH)
+            x = int((definitions.CARD_SIZE[0] - definitions.UNIT_TEXT_MAX_WIDTH)/2.0)
+            y = definitions.UNIT_TEXT_MAX_DEPTH - body_img.height
+            base.composite(body_img, left=x, top=y)
 
-        self.append_curr_layer()
-        return self.render()
+        display(base)
 
-    def add_to_curr_layer(self, image, pos):
-        self.current_layer.append((image, pos))
+    def compose_keywords(self):
+        out = None
 
-    def append_curr_layer(self):
-        self.layers.append(self.current_layer)
-        self.current_layer = []
+        if len(self.kws) < 1:
+            return None
+        elif len(self.kws) == 1:
+            pass
+        elif len(self.kws) <= 5 and len(self.kws) >= 1:
+            kw_mini = Image(filename=keywords.ICON_MINI)
+            kw_dock = []
+            for kw in self.kws:
+                img_path = keywords.icons[keywords.symbols_map[kw.lower()]]
+                kw_icon = Image(filename=img_path)
+                kw_copy = kw_mini.clone()
+                l,t,_,_ = tools.center_align((0,0,kw_icon.width,kw_icon.height),(0,0,kw_copy.width,kw_copy.height),vertical=True)
+                kw_copy.composite(kw_icon, left=l, top=t)
+                kw_dock.append(kw_copy)
+            out= tools.stitch_images_horizontal(kw_dock,kw_mini.height,x_spacing=20)
+
+        return out
 
     def format_text(self, text):
         """
@@ -83,7 +100,7 @@ class UnitCard(object):
         # throw an error
         stack = []
         for i, c in enumerate(text):
-            if c == '<' or c == '{':
+            if c == '<' or c == '[':
                 if stack:
                     raise ValueError("Cannot nest keywords")
                 else:
@@ -92,66 +109,65 @@ class UnitCard(object):
             if c == '>':
                 if not stack:
                     raise ValueError("Keywords not well formed, missing opening <")
-                elif stack[0] == '{':
+                elif stack[0] == '[':
                     raise ValueError("Keywords not well formed")
                 elif stack[0] == '<':
                     stack.pop()
 
-            elif c == '}':
+            elif c == ']':
                 if not stack:
                     raise ValueError("Keywords not well formed, missing opening {")
-                elif stack[0] == '{':
+                elif stack[0] == '[':
                     stack.pop()
                 elif stack[0] == '<':
                     raise ValueError("Keywords not well formed")
 
         # If the check is good, then this can easily be split
-        out = []
+        cata = []
         curr = ""
         for c in text:
-            if c == '<' or c == '{':
-                if out:
-                    out.append((curr, enums.TextType.TEXT))
+            if c == '<' or c == '[':
+                if curr:
+                    cata.append((curr, enums.TextType.TEXT))
                 curr = ""
             elif c == '>':
-                out.append((curr, enums.TextType.KEYWORD))
+                cata.append((curr, enums.TextType.KEYWORD))
                 curr = ""
-            elif c == '}':
-                out.append((curr,enums.TextType.REF))
+            elif c == ']':
+                cata.append((curr,enums.TextType.REF))
                 curr = ""
             else:
                 curr+=c
         if curr:
-            out.append((curr, enums.TextType.TEXT))
+            cata.append((curr, enums.TextType.TEXT))
+
+        out = []
+        for text, type in cata:
+            path = None
+            words = [w for w in text.split(" ") if w]
+            for i, w in enumerate(words):
+                if type == enums.TextType.KEYWORD:
+                    if text.lower() in keywords.symbols_map and i == 0:
+                        path = keywords.symbols[keywords.symbols_map[text.lower()]]
+                        out.append((w.capitalize(), fonts.FONT_KEYWORD, path))
+                    else:
+                        out.append((w.capitalize(), fonts.FONT_KEYWORD, None))
+                elif type == enums.TextType.TEXT:
+                    out.append((w, fonts.FONT_TEXT, None))
+                elif type == enums.TextType.REF:
+                    out.append((w.capitalize(), fonts.FONT_REF, None))
+            path = None
+
         return out
 
-    def format_description(self, formatted_text, max_width):
-        lines = []
-        curr_width = []
-        for text, type in formatted_text:
-            pass
-            
-    def render(self):
-        """
-        Render the image in order of layers
-        """
-        composite = Image.new('RGBA', self.size)
-        for layer in self.layers:
-            for l in layer:
-                img, pos = l
-                if img.size != composite.size or img.mode != 'RGBA':
-                    img = image_tools.process_img(img, pos, composite.size)
-                composite = Image.alpha_composite(composite, img)
-        return composite
-
 if __name__ == '__main__':
-    name = "Hello world!"
-    hp = "500"
+    name = "Maximum Cow"
+    hp = "10"
+    pwr = "10"
     mp = "44"
-    pwr = "500"
-    text = "Allegiance: Grant all allies"
+    text = "<Quick Attack>: I attack the enemy nexus and summmon 3 [Small Cows] with <fearsome>"
     frame_path = frames.UNIT_COMMON
     img_path = "..\\test\\test_images\\cow.jpg"
-    uc = UnitCard(name, hp, mp, pwr, text, frame_path, img_path)
+    kws = ['barrier', 'elusive']
+    uc = UnitCard(name, hp, mp, pwr, text, frame_path, img_path, kws=kws)
     img = uc.construct()
-    img.save("..\\test\\test_images\\construct.png")

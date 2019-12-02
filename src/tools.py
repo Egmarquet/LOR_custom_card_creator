@@ -40,7 +40,7 @@ def get_scale(size_1, size_2):
     """
     return (float(size_1[1])/size_2[1],float(size_1[1])/size_2[1])
 
-def draw_text_in_box(base, text, font_tup, bounds):
+def draw_text_in_box(base, text, font_tup, bounds, kerning=0):
     """
     Draws a single line of text such that it does not exceed bounds
 
@@ -51,7 +51,7 @@ def draw_text_in_box(base, text, font_tup, bounds):
         draw.font = font_path
         draw.font_size = font_size
         draw.fill_color = color
-
+        draw.text_kerning = kerning
         metrics = draw.get_font_metrics(base, text)
         scale = (bounds[3]-bounds[1])/metrics.text_width
         # If the image is too wide for the bounding box
@@ -61,23 +61,25 @@ def draw_text_in_box(base, text, font_tup, bounds):
         # Centering and drawing
         asc = int(metrics.ascender)
         desc = int(-1*metrics.descender)
-        center = center_align((0,0,metrics.text_width,asc+desc),bounds, vertical=True)
+        center = center_align((0,0,metrics.text_width, asc+desc),bounds, vertical=True)
         draw.text(x=center[0],y=center[1]+asc,body=text)
         draw(base)
+
     return base
 
-def text_to_image(text, font_tup, icon=None):
+def text_to_image(text, font_tup, icon=None, kerning=0):
     out = Image(height=1,width=1)
     with Drawing() as draw:
         font_path, font_size, color = font_tup
         draw.font = font_path
         draw.font_size = font_size
         draw.fill_color = color
+        draw.text_kerning = kerning
 
         metrics = draw.get_font_metrics(out, text)
         asc = int(metrics.ascender)
         desc = int(-1*metrics.descender)
-        width = metrics.text_width
+        width = metrics.text_width + max(metrics.x1, -1*metrics.x1)
         offset = 0
         if icon:
             # scaling icon

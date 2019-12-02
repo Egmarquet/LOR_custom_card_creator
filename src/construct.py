@@ -4,44 +4,83 @@ sys.path.append("..")
 from PIL import ImageDraw, ImageFont
 from PIL import Image as PILImage
 import tools
-from resources import definitions, enums, fonts, frames, keywords
+from resources import definitions, enums, fonts, frames, keywords, regions
 from wand.font import Font
 from wand.image import Image
 from wand.color import Color
 from wand.drawing import Drawing
 from wand.display import display
+import time
 
 class UnitCard(object):
-    def __init__(self, name, hp, mana, pwr, text, frame_path, img_path, kws=None, size=definitions.CARD_SIZE):
+    def __init__(self,  frame_path,
+                        name=None,
+                        hp=None,
+                        mana=None,
+                        pwr=None,
+                        text=None,
+                        tribe=None,
+                        region=None,
+                        img_path=None,
+                        kws=None,
+                        darkness_alpha=0.35,
+                        blur=True):
+
+        self.frame_path = frame_path
+        self.img_path = img_path
         self.name = name
         self.mana = mana
         self.hp = hp
         self.pwr = pwr
         self.text = text
-        self.frame_path = frame_path
-        self.img_path = img_path
+        self.tribe = tribe
+        self.text = text
+        self.region= region
         self.kws = kws
-        self.size = size
-        self.current_layer = []
-        self.layers = []
 
-    def construct(self):
-        w,h = definitions.CARD_SIZE
-        base = Image(width=w,height=h)
-        base = tools.to_layer(Image(filename=self.img_path), definitions.CARD_SIZE, definitions.POS_UNIT_IMG)
-        test = Image(filename=frames.DARKNESS)
-        base.composite(test)
-        base.composite(Image(filename=self.frame_path))
+        # Darkness
+        self.darkness_alpha = darkness_alpha
+        self.blur = True
 
+        # Private image layers
+        self.__frame = Image(filename=self.frame_path)
+        self.__body = None
+        self.__image = None
+        self.__body_y_pos = 0
+
+        self.out = None
+
+    def render_frame(self):
+        """
+        Renders all elements that can sit on the frame of the image
+        """
+        self.__frame = Image(filename=self.frame_path)
         if self.mana:
-            tools.draw_text_in_box(base, self.hp, fonts.FONT_MANA, definitions.POS_MANA)
+            tools.draw_text_in_box(self.__frame, self.mana, fonts.FONT_MANA, definitions.POS_MANA)
         if self.hp:
-            tools.draw_text_in_box(base, self.hp, fonts.FONT_HPPWR, definitions.POS_HP)
+            tools.draw_text_in_box(self.__frame, self.hp, fonts.FONT_HPPWR, definitions.POS_HP)
         if self.pwr:
-            tools.draw_text_in_box(base, self.hp, fonts.FONT_HPPWR, definitions.POS_PWR)
+            tools.draw_text_in_box(self.__frame, self.pwr, fonts.FONT_HPPWR, definitions.POS_PWR)
+        if self.tribe:
+            tribe_img = Image(filename=frames.TRIBE)
+            center = int((definitions.CARD_SIZE[0] - tribe_img.width)/2.0)
+            with tribe_img:
+                self.__frame.composite(tribe_img, top=11, left=center)
+                tools.draw_text_in_box(self.__frame, self.tribe.upper(), fonts.FONT_TRIBE, definitions.POS_TRIBE, kerning=3)
+        if self.region in regions.map:
+            region_img = Image(filename=regions.map[self.region])
+            center = int((definitions.CARD_SIZE[0] - region_img.width)/2.0)
+            with region_img:
+                self.__frame.watermark(region_img, transparency=0.65, top=870, left=center)
 
-        # Making body text
+    def render_body(self):
+        """
+        Rendering any text that goes in the body of the image
+        All the positioning for the body is relative to the card positioning
+        """
+        self.__body = Image(width=definitions.CARD_SIZE[0],height=definitions.CARD_SIZE[1])
         body = []
+
         if self.name:
             name_img = tools.text_to_image(self.name.upper(), fonts.FONT_NAME)
             if name_img.width > definitions.UNIT_TEXT_MAX_WIDTH:
@@ -52,6 +91,7 @@ class UnitCard(object):
         if self.kws:
             body.append(self.compose_keywords())
 
+        # Adding text body
         if self.text:
             metrics = fonts.get_metrics(fonts.FONT_TEXT[0],fonts.FONT_TEXT[1])
             ft = self.format_text(self.text)
@@ -60,7 +100,10 @@ class UnitCard(object):
                 word_images.append(tools.text_to_image(word, font_tup, icon))
 
             if word_images:
-                text_img = tools.compose_image_block_centered(word_images, definitions.UNIT_TEXT_MAX_WIDTH, word_images[0].height, x_spacing=metrics.text_width)
+                text_img = tools.compose_image_block_centered(  word_images,
+                                                                definitions.UNIT_TEXT_MAX_WIDTH,
+                                                                word_images[0].height,
+                                                                x_spacing=metrics.text_width)
                 body.append(text_img)
 
         # compositing body
@@ -68,10 +111,44 @@ class UnitCard(object):
             body_img = tools.stitch_images_vertical(body, definitions.UNIT_TEXT_MAX_WIDTH)
             x = int((definitions.CARD_SIZE[0] - definitions.UNIT_TEXT_MAX_WIDTH)/2.0)
             y = definitions.UNIT_TEXT_MAX_DEPTH - body_img.height
+            self.__body_y_pos = y
             with body_img:
-                base.composite(body_img, left=x, top=y)
+                self.__body.composite(body_img, left=x, top=y)
 
-        return base
+    def render_image(self):
+        base = Image(width=definitions.CARD_SIZE[0],height=definitions.CARD_SIZE[1])
+        l, t = definitions.POS_UNIT_IMG
+        print(self.__body_y_pos)
+
+        if self.img_path:
+            with Image(filename=self.img_path) as img:
+                base.composite(img, left=l, top=t)
+                if self.blur and self.__body_y_pos:
+                    new = Image(width=definitions.CARD_SIZE[0],height=definitions.CARD_SIZE[1])
+                    slice_upper = base.clone()[0:base.width,0:self.__body_y_pos]
+                    with base[0:base.width,self.__body_y_pos:base.height] as slice_lower:
+                        slice_lower.blur(sigma=9)
+                        new.composite(slice_lower,top=self.__body_y_pos)
+                    new.composite(slice_upper)
+                    base = new
+            with Image(filename=frames.DARKNESS) as dark:
+                base.watermark(dark, transparency=self.darkness_alpha)
+
+        self.__image = base
+
+    def render(self):
+        base = Image(width=definitions.CARD_SIZE[0],height=definitions.CARD_SIZE[1])
+        self.render_frame()
+        self.render_body()
+        self.render_image()
+        if self.__image:
+            base.composite(self.__image)
+        if self.__frame:
+            base.composite(self.__frame)
+        if self.__body:
+            base.composite(self.__body)
+
+        self.out = base
 
     def compose_keywords(self):
         out = None
@@ -179,13 +256,26 @@ class UnitCard(object):
 
 if __name__ == '__main__':
     name = "Maximum Cow"
-    hp = "10"
-    pwr = "10"
-    mp = "44"
+    hp = "4"
+    pwr = "3"
+    mp = "3"
     text = "<Quick Attack>: I attack the enemy nexus and summmon 3 [Small Cows] with <fearsome>"
     frame_path = frames.UNIT_COMMON
-    img_path = "..\\test\\test_images\\cow.jpg"
+    img_path = "..\\test\\test_images\\test_dab.png"
     kws = ['barrier']
-    uc = UnitCard(name, hp, mp, pwr, text, frame_path, img_path, kws=kws)
-    img = uc.construct()
-    display(img)
+    tribe = "Elite"
+    region = "noxus"
+    uc = UnitCard(frame_path)
+    uc.name = name
+    uc.img_path = img_path
+    uc.tribe = tribe
+    uc.mana = "1"
+    uc.hp = "10"
+    uc.text = text
+    uc.img_path = img_path
+    # adds .15 seconds to execution
+    start = time.time()
+    uc.render()
+    end = time.time()
+    print(end - start)
+    display(uc.out)

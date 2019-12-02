@@ -13,3 +13,16 @@ TODO:
   - much of the lor-template-pack is bloated and with bad file paths,
     should slim it and reorganize
   - no real documentation lmaooo
+
+Update 11/30:
+  Redid all the rendering in Wand, looks much better
+  Reorganized the file structure
+  Reorganized lor-template packs
+
+  TODO:
+    Need to add gaussianblur based off of body height for untis
+    Need to add tribes
+    Need to add champion level ups
+    Need to add regions icons
+
+    Next: Spells 

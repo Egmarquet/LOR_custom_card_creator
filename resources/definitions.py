@@ -1,3 +1,8 @@
+"""
+Card Types:
+    unit_norare
+
+"""
 # Root directory
 CARD_SIZE = (680, 1024)
 

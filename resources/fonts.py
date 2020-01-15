@@ -15,7 +15,7 @@ FONT_SZ_HPPWR = 70
 FONT_SZ_TEXT = 37
 FONT_SZ_NAME = 70 # need to look this oneup
 FONT_SZ_KEYWORD = 40
-FONT_SZ_TRIBE = 50
+FONT_SZ_TRIBE = 37
 
 # colors
 WHITE = 'rgb(255,255,255)'
